@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<title>WAVE/DASH · Rewards That Deliver</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#0a0a0f;font-family:'DM Mono','Courier New',monospace}
+  ::-webkit-scrollbar{width:4px}
+  ::-webkit-scrollbar-thumb{background:#1e2a42;border-radius:99px}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect } = React;
+
+const TENANT = {
+  appName:    "WAVE/DASH",
+  tagline:    "REWARDS THAT DELIVER",
+  accentFrom: "#3b82f6",
+  accentTo:   "#6366f1",
+  coinColor:  "#c084fc",
+  coinBorder: "rgba(168,85,247,0.4)",
+  coinBg:     "rgba(168,85,247,0.15)",
+  startingCoins: 1840,
+  redemptionRate: 0.005,
+  items: [
+    { id:1, name:"Smoke & Soul BBQ",      cuisine:"BBQ • American",        rating:4.8, time:"22-32 min", reward:180, distance:"0.8 mi", img:"🍖", price:"$$",  tags:["Popular","R2 Elite"] },
+    { id:2, name:"Golden Pho House",       cuisine:"Vietnamese • Soup",     rating:4.6, time:"18-28 min", reward:120, distance:"1.2 mi", img:"🍜", price:"$",   tags:["Fast"] },
+    { id:3, name:"Brick Oven Collective",  cuisine:"Pizza • Italian",       rating:4.9, time:"30-40 min", reward:220, distance:"2.1 mi", img:"🍕", price:"$$$", tags:["R2 Elite","Top Rated"] },
+    { id:4, name:"Yerba Buena Tacos",      cuisine:"Mexican • Street Food", rating:4.7, time:"15-25 min", reward:95,  distance:"0.5 mi", img:"🌮", price:"$",   tags:["Nearby"] },
+    { id:5, name:"Harbor Sushi Bar",       cuisine:"Japanese • Sushi",      rating:4.5, time:"35-45 min", reward:310, distance:"3.0 mi", img:"🍣", price:"$$$", tags:["Premium"] },
+    { id:6, name:"Root & Grain Bowl",      cuisine:"Healthy • Bowls",       rating:4.4, time:"20-30 min", reward:140, distance:"1.8 mi", img:"🥗", price:"$$",  tags:["New"] },
+  ],
+  tagColors: {
+    "R2 Elite":"#3b82f6","Popular":"#f59e0b","Top Rated":"#10b981","New":"#8b5cf6",
+  },
+  nav:[
+    {id:"home",  icon:"⊞", label:"EXPLORE"},
+    {id:"cart",  icon:"◉", label:"CART"},
+    {id:"track", icon:"◎", label:"TRACK"},
+    {id:"rewards",icon:"◆",label:"REWARDS"},
+  ],
+};
+
+const TIERS = [
+  {name:"R2 Standard", min:0,    max:499,      mult:1.0, color:"#6b7280", icon:"◆"},
+  {name:"R2 Plus",     min:500,  max:1499,     mult:1.5, color:"#f59e0b", icon:"◆◆"},
+  {name:"R2 Elite",    min:1500, max:4999,     mult:2.5, color:"#3b82f6", icon:"◆◆◆"},
+  {name:"R2 Platinum", min:5000, max:Infinity, mult:4.0, color:"#a855f7", icon:"◆◆◆◆"},
+];
+
+function App() {
+  const [activeTab, setActiveTab]         = useState("home");
+  const [coins, setCoins]                 = useState(TENANT.startingCoins);
+  const [cart, setCart]                   = useState([]);
+  const [orderPlaced, setOrderPlaced]     = useState(false);
+  const [searchQuery, setSearchQuery]     = useState("");
+  const [orderProgress, setOrderProgress] = useState(0);
+  const [animIn, setAnimIn]               = useState(false);
+
+  const currentTier = TIERS.find(t => coins >= t.min && coins <= t.max) || TIERS[0];
+  const nextTier    = TIERS[TIERS.indexOf(currentTier) + 1];
+  const tierProgress = nextTier ? ((coins - currentTier.min) / (nextTier.min - currentTier.min)) * 100 : 100;
+
+  useEffect(() => { setAnimIn(true); }, []);
+
+  useEffect(() => {
+    if (orderPlaced) {
+      const iv = setInterval(() => {
+        setOrderProgress(p => { if (p >= 100){clearInterval(iv);return 100;} return p+2; });
+      }, 80);
+      return () => clearInterval(iv);
+    }
+  }, [orderPlaced]);
+
+  const filtered = TENANT.items.filter(r =>
+    r.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    r.cuisine.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const addToCart = (item) => {
+    setCart(prev => {
+      const ex = prev.find(i => i.id === item.id);
+      if (ex) return prev.map(i => i.id === item.id ? {...i, qty: i.qty+1} : i);
+      return [...prev, {...item, qty:1}];
+    });
+  };
+
+  const cartTotal = cart.reduce((s,i) => s + i.reward * i.qty, 0);
+  const cartCount = cart.reduce((s,i) => s + i.qty, 0);
+
+  const handleOrder = () => {
+    if (!cart.length) return;
+    setCoins(c => c + cartTotal);
+    setOrderPlaced(true);
+    setOrderProgress(0);
+    setActiveTab("track");
+  };
+
+  const ac = TENANT.accentFrom;
+  const at = TENANT.accentTo;
+
+  const S = {
+    app:{fontFamily:"'DM Mono','Courier New',monospace",background:"#0a0a0f",color:"#e8e8f0",minHeight:"100vh",maxWidth:"420px",margin:"0 auto",position:"relative",overflow:"hidden"},
+    header:{background:"linear-gradient(135deg,#0d0d18 0%,#111128 100%)",padding:"20px 20px 16px",borderBottom:"1px solid rgba(255,255,255,0.06)",position:"sticky",top:0,zIndex:10},
+    logo:{fontSize:"22px",fontWeight:"700",letterSpacing:"-0.5px",background:`linear-gradient(90deg,${ac},${at})`,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"},
+    coinBadge:{background:TENANT.coinBg,border:`1px solid ${TENANT.coinBorder}`,borderRadius:"20px",padding:"4px 12px",fontSize:"13px",color:TENANT.coinColor,fontWeight:"600"},
+    tierBar:{background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:"12px",padding:"10px 14px",margin:"12px 0 0"},
+    searchBox:{background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:"12px",padding:"10px 16px",color:"#e8e8f0",width:"100%",outline:"none",fontSize:"14px",fontFamily:"'DM Mono',monospace",boxSizing:"border-box"},
+    card:{background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:"16px",padding:"16px",marginBottom:"10px",cursor:"pointer",transition:"all 0.2s"},
+    tag:(color)=>({background:color?`${color}20`:"rgba(96,165,250,0.15)",border:`1px solid ${color?color+"50":"rgba(96,165,250,0.3)"}`,borderRadius:"6px",padding:"2px 8px",fontSize:"10px",fontWeight:"600",letterSpacing:"0.5px",color:color||"#60a5fa"}),
+    btn:{background:`linear-gradient(135deg,${ac},${at})`,border:"none",borderRadius:"12px",color:"white",fontFamily:"'DM Mono',monospace",fontWeight:"700",fontSize:"14px",padding:"12px 24px",cursor:"pointer",letterSpacing:"0.5px"},
+    navBar:{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"420px",background:"rgba(10,10,20,0.95)",backdropFilter:"blur(20px)",borderTop:"1px solid rgba(255,255,255,0.08)",display:"flex",padding:"8px 0 16px",zIndex:20},
+    navItem:(active)=>({flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:"4px",padding:"8px",cursor:"pointer",color:active?ac:"#4b5563",fontSize:"10px",fontWeight:active?"700":"500",transition:"color 0.2s"}),
+    sectionLabel:{fontSize:"11px",color:"#6b7280",letterSpacing:"1.5px",marginBottom:"10px"},
+  };
+
+  return (
+    <div style={S.app}>
+      {/* HEADER */}
+      <div style={S.header}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <div>
+            <div style={S.logo}>{TENANT.appName}</div>
+            <div style={{fontSize:"11px",color:"#4b5563",marginTop:"2px",letterSpacing:"1px"}}>{TENANT.tagline}</div>
+          </div>
+          <div style={S.coinBadge}>◆ {coins.toLocaleString()} R2C</div>
+        </div>
+        <div style={S.tierBar}>
+          <div style={{display:"flex",justifyContent:"space-between",marginBottom:"6px"}}>
+            <span style={{fontSize:"11px",color:currentTier.color,fontWeight:"700"}}>{currentTier.icon} {currentTier.name}</span>
+            {nextTier && <span style={{fontSize:"10px",color:"#6b7280"}}>{(nextTier.min-coins).toLocaleString()} R2C → {nextTier.name}</span>}
+          </div>
+          <div style={{background:"rgba(255,255,255,0.08)",borderRadius:"4px",height:"4px",overflow:"hidden"}}>
+            <div style={{height:"100%",width:`${tierProgress}%`,background:`linear-gradient(90deg,${currentTier.color},${nextTier?.color||currentTier.color})`,borderRadius:"4px",transition:"width 0.5s ease"}}/>
+          </div>
+        </div>
+      </div>
+
+      {/* CONTENT */}
+      <div style={{padding:"16px",paddingBottom:"80px",minHeight:"calc(100vh - 160px)"}}>
+
+        {/* HOME */}
+        {activeTab==="home" && (
+          <div style={{opacity:animIn?1:0,transform:animIn?"translateY(0)":"translateY(10px)",transition:"all 0.4s ease"}}>
+            <div style={{marginBottom:"16px"}}>
+              <input style={S.searchBox} placeholder="🔍  Search..." value={searchQuery} onChange={e=>setSearchQuery(e.target.value)}/>
+            </div>
+            <div style={{background:`linear-gradient(135deg,${currentTier.color}30,${currentTier.color}20)`,border:`1px solid ${currentTier.color}50`,borderRadius:"14px",padding:"14px 16px",marginBottom:"16px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <div>
+                <div style={{fontSize:"12px",color:currentTier.color,fontWeight:"700",letterSpacing:"0.5px"}}>{currentTier.name.toUpperCase()} ACTIVE</div>
+                <div style={{fontSize:"13px",color:"#e8e8f0",marginTop:"2px"}}>{currentTier.mult}× reward multiplier on all orders</div>
+              </div>
+              <div style={{fontSize:"28px"}}>⚡</div>
+            </div>
+            <div style={S.sectionLabel}>NEARBY</div>
+            {filtered.map(r=>(
+              <div key={r.id} style={S.card}>
+                <div style={{display:"flex",gap:"12px"}}>
+                  <div style={{fontSize:"36px",background:"rgba(255,255,255,0.05)",borderRadius:"12px",width:"60px",height:"60px",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{r.img}</div>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+                      <div style={{fontSize:"14px",fontWeight:"700",color:"#f0f0ff"}}>{r.name}</div>
+                      <div style={{fontSize:"11px",color:"#4b5563",flexShrink:0,marginLeft:"8px"}}>{r.price}</div>
+                    </div>
+                    <div style={{fontSize:"11px",color:"#6b7280",margin:"3px 0"}}>{r.cuisine}</div>
+                    <div style={{display:"flex",gap:"8px",alignItems:"center",flexWrap:"wrap"}}>
+                      <span style={{fontSize:"11px",color:"#fbbf24"}}>★ {r.rating}</span>
+                      <span style={{fontSize:"11px",color:"#6b7280"}}>•</span>
+                      <span style={{fontSize:"11px",color:"#6b7280"}}>{r.time}</span>
+                      <span style={{fontSize:"11px",color:"#6b7280"}}>•</span>
+                      <span style={{fontSize:"11px",color:"#6b7280"}}>{r.distance}</span>
+                    </div>
+                    <div style={{display:"flex",gap:"6px",marginTop:"6px",alignItems:"center",flexWrap:"wrap"}}>
+                      {r.tags.map(t=><span key={t} style={S.tag(TENANT.tagColors[t]||null)}>{t}</span>)}
+                      <span style={{marginLeft:"auto",fontSize:"11px",color:TENANT.coinColor,fontWeight:"600"}}>+{r.reward} R2C</span>
+                    </div>
+                  </div>
+                </div>
+                <button onClick={()=>addToCart(r)} style={{...S.btn,width:"100%",marginTop:"12px",padding:"9px",fontSize:"12px",background:`${ac}18`,border:`1px solid ${ac}40`,color:ac}}>
+                  ADD TO ORDER  +
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* CART */}
+        {activeTab==="cart" && (
+          <div>
+            <div style={S.sectionLabel}>YOUR ORDER</div>
+            {cart.length===0 ? (
+              <div style={{textAlign:"center",padding:"60px 20px",color:"#4b5563"}}>
+                <div style={{fontSize:"40px",marginBottom:"12px"}}>🛒</div>
+                <div style={{fontSize:"14px"}}>Your cart is empty</div>
+                <div style={{fontSize:"11px",marginTop:"8px"}}>Add items from the explore tab</div>
+              </div>
+            ) : (
+              <>
+                {cart.map(item=>(
+                  <div key={item.id} style={S.card}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                      <div style={{display:"flex",gap:"12px",alignItems:"center"}}>
+                        <span style={{fontSize:"24px"}}>{item.img}</span>
+                        <div>
+                          <div style={{fontSize:"13px",fontWeight:"700"}}>{item.name}</div>
+                          <div style={{fontSize:"11px",color:"#6b7280"}}>{item.cuisine}</div>
+                        </div>
+                      </div>
+                      <div style={{textAlign:"right"}}>
+                        <div style={{fontSize:"12px",color:TENANT.coinColor}}>+{Math.round(item.reward*item.qty*currentTier.mult)} R2C</div>
+                        <div style={{fontSize:"10px",color:"#6b7280",marginTop:"2px"}}>{item.reward} × {item.qty} × {currentTier.mult}×</div>
+                        <div style={{fontSize:"10px",color:"#4b5563",marginTop:"1px"}}>qty: {item.qty}</div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                <div style={{...S.card,background:`${ac}12`,border:`1px solid ${ac}30`}}>
+                  <div style={{display:"flex",justifyContent:"space-between",marginBottom:"8px"}}>
+                    <span style={{fontSize:"12px",color:"#9ca3af"}}>Base R2 Coins</span>
+                    <span style={{fontSize:"12px",color:"#9ca3af"}}>+{cartTotal} R2C</span>
+                  </div>
+                  <div style={{display:"flex",justifyContent:"space-between",marginBottom:"8px"}}>
+                    <span style={{fontSize:"12px",color:"#9ca3af"}}>{currentTier.name} Multiplier</span>
+                    <span style={{fontSize:"12px",color:currentTier.color,fontWeight:"600"}}>{currentTier.mult}× ACTIVE</span>
+                  </div>
+                  <div style={{borderTop:"1px solid rgba(255,255,255,0.06)",paddingTop:"8px",display:"flex",justifyContent:"space-between"}}>
+                    <span style={{fontSize:"13px",color:"#e8e8f0",fontWeight:"700"}}>Total Earned</span>
+                    <span style={{fontSize:"14px",color:TENANT.coinColor,fontWeight:"700"}}>+{Math.round(cartTotal*currentTier.mult)} R2C</span>
+                  </div>
+                </div>
+                <button onClick={handleOrder} style={{...S.btn,width:"100%",padding:"14px"}}>PLACE ORDER  →</button>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* TRACK */}
+        {activeTab==="track" && (
+          <div>
+            <div style={S.sectionLabel}>ORDER STATUS</div>
+            {!orderPlaced ? (
+              <div style={{textAlign:"center",padding:"60px 20px",color:"#4b5563"}}>
+                <div style={{fontSize:"40px",marginBottom:"12px"}}>📦</div>
+                <div style={{fontSize:"14px"}}>No active orders</div>
+              </div>
+            ) : (
+              <>
+                <div style={{textAlign:"center",marginBottom:"24px"}}>
+                  <div style={{position:"relative",display:"inline-block"}}>
+                    <svg width="140" height="140">
+                      <circle cx="70" cy="70" r="56" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="8"/>
+                      <circle cx="70" cy="70" r="56" fill="none" stroke={`url(#tg)`} strokeWidth="8" strokeLinecap="round"
+                        strokeDasharray={`${2*Math.PI*56}`}
+                        strokeDashoffset={`${2*Math.PI*56*(1-orderProgress/100)}`}
+                        transform="rotate(-90 70 70)" style={{transition:"stroke-dashoffset 0.3s ease"}}/>
+                      <defs>
+                        <linearGradient id="tg" x1="0%" y1="0%" x2="100%" y2="0%">
+                          <stop offset="0%" stopColor={ac}/>
+                          <stop offset="100%" stopColor={at}/>
+                        </linearGradient>
+                      </defs>
+                    </svg>
+                    <div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",textAlign:"center"}}>
+                      <div style={{fontSize:"26px",fontWeight:"800",color:ac}}>{orderProgress}%</div>
+                      <div style={{fontSize:"9px",color:"#6b7280",letterSpacing:"1px"}}>
+                        {orderProgress<30?"CONFIRMED":orderProgress<70?"EN ROUTE":orderProgress<100?"NEARBY":"DELIVERED"}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                {[
+                  {label:"Order Confirmed", done:orderProgress>=10},
+                  {label:"Being Prepared",  done:orderProgress>=40},
+                  {label:"Driver Picked Up",done:orderProgress>=70},
+                  {label:"Delivered",       done:orderProgress>=100},
+                ].map((step,i)=>(
+                  <div key={i} style={{display:"flex",alignItems:"center",gap:"12px",marginBottom:"12px",opacity:step.done?1:0.35,transition:"opacity 0.5s"}}>
+                    <div style={{width:"28px",height:"28px",borderRadius:"50%",background:step.done?`linear-gradient(135deg,${ac},${at})`:"rgba(255,255,255,0.05)",border:step.done?"none":"1px solid rgba(255,255,255,0.1)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"12px",flexShrink:0}}>
+                      {step.done?"✓":(i+1)}
+                    </div>
+                    <span style={{fontSize:"13px",color:step.done?"#e8e8f0":"#4b5563"}}>{step.label}</span>
+                  </div>
+                ))}
+                {orderProgress>=100 && (
+                  <div style={{...S.card,background:"rgba(16,185,129,0.1)",border:"1px solid rgba(16,185,129,0.3)",textAlign:"center",marginTop:"20px"}}>
+                    <div style={{fontSize:"24px",marginBottom:"8px"}}>🎉</div>
+                    <div style={{fontSize:"13px",color:"#10b981",fontWeight:"700"}}>ORDER DELIVERED</div>
+                    <div style={{fontSize:"12px",color:"#9ca3af",marginTop:"4px"}}>+{Math.round(cartTotal*currentTier.mult)} R2 Coins added to your balance</div>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        )}
+
+        {/* REWARDS */}
+        {activeTab==="rewards" && (
+          <div>
+            <div style={S.sectionLabel}>R2P REWARDS CENTER</div>
+            <div style={{background:`linear-gradient(135deg,${ac}30,${at}20)`,border:`1px solid ${ac}50`,borderRadius:"16px",padding:"20px",marginBottom:"20px",textAlign:"center"}}>
+              <div style={{fontSize:"11px",color:"#9ca3af",letterSpacing:"1px",marginBottom:"6px"}}>TOTAL R2 COINS</div>
+              <div style={{fontSize:"42px",fontWeight:"800",background:`linear-gradient(90deg,${ac},${at})`,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>{coins.toLocaleString()}</div>
+              <div style={{fontSize:"12px",color:"#6b7280",marginTop:"4px"}}>≈ ${(coins*TENANT.redemptionRate).toFixed(2)} redemption value</div>
+            </div>
+            <div style={S.sectionLabel}>TIER STRUCTURE</div>
+            {TIERS.map(t=>(
+              <div key={t.name} style={{...S.card,border:t.name===currentTier.name?`1px solid ${t.color}40`:"1px solid rgba(255,255,255,0.06)",background:t.name===currentTier.name?`${t.color}15`:"rgba(255,255,255,0.03)"}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                  <div>
+                    <div style={{fontSize:"13px",fontWeight:"700",color:t.color}}>{t.icon} {t.name}</div>
+                    <div style={{fontSize:"11px",color:"#6b7280",marginTop:"3px"}}>
+                      {t.max===Infinity?`${t.min.toLocaleString()}+ R2C  ·  ${t.mult}× multiplier`:`${t.min.toLocaleString()} – ${t.max.toLocaleString()} R2C  ·  ${t.mult}× multiplier`}
+                    </div>
+                  </div>
+                  {t.name===currentTier.name && (
+                    <div style={{background:`${t.color}20`,border:`1px solid ${t.color}50`,borderRadius:"8px",padding:"4px 10px",fontSize:"10px",color:t.color,fontWeight:"700"}}>CURRENT</div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* NAV */}
+      <div style={S.navBar}>
+        {TENANT.nav.map(tab=>{
+          const label = tab.id==="cart"&&cartCount>0?`CART (${cartCount})`:tab.label;
+          return (
+            <div key={tab.id} style={S.navItem(activeTab===tab.id)} onClick={()=>setActiveTab(tab.id)}>
+              <span style={{fontSize:"18px"}}>{tab.icon}</span>
+              <span>{label}</span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
