@@ -1,1 +1,2 @@
-# wavedash
+# wavedashScroll up in this conversation to the message that starts with:
+# WAVE/DASH · Rewards That DeliverSelect from that line down to the final line All rights reserved….Copy it.In GitHub:Open your repo.Click Add file → Create new file.Name it README.md.Paste the text into the editor.Click Commit changes.For the HTML / codeIn this chat, scroll to the full <!DOCTYPE html> block you pasted (the WAVE/DASH code).Select from <!DOCTYPE html> down to </html>.Copy it.In your local editor or GitHub’s editor, paste it into index.html (replace the old contents if needed), then save/commit.
